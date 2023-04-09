@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { auth } from '$lib/firebase';
+	import { currentUserCtx, firebaseCtx } from '$lib/firebase';
 	import { sendPasswordResetEmail } from 'firebase/auth';
 	import { goto } from '$app/navigation';
-	import { currentUser } from '$lib/firebase';
 	import { browser } from '$app/environment';
 
-    // automatically redirect
+	const currentUser = currentUserCtx();
+	const auth = firebaseCtx().getAuth();
+	// automatically redirect
 	$: if ($currentUser && browser) {
 		goto('/chat');
 	}

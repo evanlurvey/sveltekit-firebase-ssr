@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
 import {
 	collection,
 	// DocumentReference,
@@ -6,7 +6,8 @@ import {
 	Query,
 	CollectionReference,
 	type DocumentData,
-    getFirestore
+	getFirestore,
+	Firestore
 } from 'firebase/firestore';
 import {
 	initializeAuth,
@@ -14,8 +15,9 @@ import {
 	indexedDBLocalPersistence,
 	signInWithEmailAndPassword,
 	createUserWithEmailAndPassword,
-    updateProfile,
-    sendEmailVerification
+	updateProfile,
+	sendEmailVerification,
+	type Auth
 } from 'firebase/auth';
 import {
 	PUBLIC_FIREBASE_PROJECT_ID,
@@ -28,8 +30,10 @@ import {
 import { writable, readable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
+import type { AppUser } from './models';
+import { getContext } from 'svelte';
 
-function makeApp() {
+export function initFirebase() {
 	console.log('init firebase');
 	return initializeApp({
 		apiKey: PUBLIC_FIREBASE_API_KEY,
@@ -42,39 +46,50 @@ function makeApp() {
 	});
 }
 
-export const firebase = makeApp();
-export const auth = initializeAuth(firebase, {
-	persistence: indexedDBLocalPersistence
-});
-export const db = getFirestore(firebase);
+export const firebaseKey = Symbol();
+export const firebaseCtx = () =>
+	getContext<{
+		getFirebase(): FirebaseApp;
+		getAuth(): Auth;
+		getDB(): Firestore;
+	}>(firebaseKey);
 
-if (browser) {
-	auth.onIdTokenChanged(async (user) => {
-		if (user) {
-			const id_token = await user.getIdToken();
-			console.log('starting session-sync');
-			await fetch('/api/session-sync', {
-				method: 'post',
-				body: JSON.stringify({ id_token })
-			});
-			console.log('finished session-sync');
-			// for typescript
-			if (!user.email) {
-				return;
+export const currentUserKey = Symbol();
+export const currentUserCtx = () => getContext<ReturnType<typeof initUserStore>>(currentUserKey);
+
+export const initUserStore = (auth: Auth, user: AppUser | null) => {
+	const currentUser = writable(user);
+	if (browser) {
+		//  we really never want to un subscribe from this
+		auth.onIdTokenChanged(async (user) => {
+			if (user) {
+				const id_token = await user.getIdToken();
+				console.log('starting session-sync');
+				await fetch('/api/session-sync', {
+					method: 'post',
+					body: JSON.stringify({ id_token })
+				});
+				console.log('finished session-sync');
+				// for typescript
+				if (!user.email) {
+					return;
+				}
+				currentUser.set({
+					uid: user.uid,
+					email: user.email,
+					emailVerified: user.emailVerified,
+					name: user.displayName ?? user.email
+				});
+			} else {
+				console.log('firebase said no users');
+				currentUser.set(null);
 			}
-			currentUser.set({
-				uid: user.uid,
-				email: user.email,
-				emailVerified: user.emailVerified,
-				name: user.displayName ?? user.email
-			});
-		} else {
-            currentUser.set(null);
-        }
-	});
-}
+		});
+	}
+	return currentUser;
+};
 
-export const logOut = async () => {
+export const logOut = (auth: Auth) => async () => {
 	await signOut(auth);
 	await fetch('/api/session-sync', {
 		method: 'post',
@@ -83,7 +98,7 @@ export const logOut = async () => {
 	goto('/auth/login');
 };
 
-export const login = async (email: string, password: string) => {
+export const login = async (auth: Auth, email: string, password: string) => {
 	const userCred = await signInWithEmailAndPassword(auth, email, password);
 	const id_token = await userCred.user.getIdToken();
 	await fetch('/api/session-sync', {
@@ -93,10 +108,10 @@ export const login = async (email: string, password: string) => {
 	goto('/chat');
 };
 
-export const createAccount = async (name: string, email: string, password: string) => {
+export const createAccount = async (auth: Auth, name: string, email: string, password: string) => {
 	const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCred.user, { displayName: name });
-    await sendEmailVerification(userCred.user);
+	await updateProfile(userCred.user, { displayName: name });
+	await sendEmailVerification(userCred.user);
 	const id_token = await userCred.user.getIdToken(true);
 	await fetch('/api/session-sync', {
 		method: 'post',
@@ -105,14 +120,8 @@ export const createAccount = async (name: string, email: string, password: strin
 	goto('/chat');
 };
 
-export const currentUser = writable<{
-	uid: string;
-	email: string;
-	emailVerified: boolean;
-	name: string;
-} | null>(null);
-
-export const typedCollection = <T = DocumentData>(collectionName: string) => {
+export const typedCollection = <T = DocumentData>(db: Firestore, collectionName: string) => {
+	getContext(firebaseKey);
 	return collection(db, collectionName) as CollectionReference<T>;
 };
 

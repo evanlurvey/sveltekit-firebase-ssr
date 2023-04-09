@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { login } from '$lib/firebase';
+	import { currentUserCtx, firebaseCtx, login } from '$lib/firebase';
 	import { goto } from '$app/navigation';
-	import { currentUser } from '$lib/firebase';
 	import { browser } from '$app/environment';
 
-    // automatically redirect
+	const currentUser = currentUserCtx();
+	const firebase = firebaseCtx();
+
+	// automatically redirect
 	$: if ($currentUser && browser) {
 		goto('/chat');
 	}
@@ -26,7 +28,7 @@
 	class="flex flex-col gap-2"
 	on:submit|preventDefault={async () => {
 		try {
-			login(email, password);
+			login(firebase.getAuth(), email, password);
 		} catch (err) {
 			console.log(err);
 			error = 'Invalid email or password';

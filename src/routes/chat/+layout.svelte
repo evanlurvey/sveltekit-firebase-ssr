@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { currentUser } from '$lib/firebase';
+	import { currentUserCtx } from '$lib/firebase';
+
+	const currentUser = currentUserCtx();
 
 	$: if (!$currentUser && browser) {
 		goto('/auth/login');

@@ -7,6 +7,6 @@ export const load: PageServerLoad = async ({ url }) => {
 	if (mode == 'resetPassword') {
 		throw redirect(303, '/auth/recover-password?code=' + oobCode);
 	} else if (mode === 'verifyEmail') {
-        throw redirect(303, '/auth/verify-email?code=' + oobCode);
-    }
+		throw redirect(303, '/auth/verify-email?code=' + oobCode);
+	}
 };

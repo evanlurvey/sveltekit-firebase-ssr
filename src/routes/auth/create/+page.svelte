@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { createAccount } from '$lib/firebase';
+	import { createAccount, currentUserCtx, firebaseCtx } from '$lib/firebase';
 	import { goto } from '$app/navigation';
-	import { currentUser } from '$lib/firebase';
 	import { browser } from '$app/environment';
 
-    // automatically redirect
+	const auth = firebaseCtx().getAuth();
+	const currentUser = currentUserCtx();
+	// automatically redirect
 	$: if ($currentUser && browser) {
 		goto('/chat');
 	}
@@ -26,7 +27,7 @@
 	class="flex flex-col gap-2"
 	on:submit|preventDefault={async () => {
 		try {
-			createAccount(name, email, password);
+			createAccount(auth, name, email, password);
 		} catch (err) {
 			console.log(err);
 			error = 'Invalid email or password';

@@ -2,8 +2,10 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth } from '$lib/firebase';
+	import { firebaseCtx } from '$lib/firebase';
 	import { confirmPasswordReset } from 'firebase/auth';
+
+	const auth = firebaseCtx().getAuth();
 
 	let code = $page.url.searchParams.get('code');
 	if (!code && browser) {

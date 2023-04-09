@@ -2,9 +2,12 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, currentUser } from '$lib/firebase';
-	import { applyActionCode  } from 'firebase/auth';
+	import { currentUserCtx, firebaseCtx } from '$lib/firebase';
+	import { applyActionCode } from 'firebase/auth';
 	import { onMount } from 'svelte';
+
+	const auth = firebaseCtx().getAuth();
+	const currentUser = currentUserCtx();
 
 	let code = $page.url.searchParams.get('code');
 	if (!code && browser) {
@@ -22,7 +25,7 @@
 				});
 				currentUser.update((user) => {
 					if (user) {
-                        user.emailVerified = true;
+						user.emailVerified = true;
 					}
 					return user;
 				});

@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { queryReadableStore, typedCollection } from '$lib/firebase';
+	import { firebaseCtx, queryReadableStore, typedCollection } from '$lib/firebase';
 	import { addDoc, orderBy, query, Timestamp } from 'firebase/firestore';
+
+	const db = firebaseCtx().getDB();
 
 	type Chat = { id?: string; msg: string; from: typeof data.user; timestamp: Timestamp };
 
-	const chats = typedCollection<Chat>('chats');
+	const chats = typedCollection<Chat>(db, 'chats');
 
 	const q = query(chats, orderBy('timestamp', 'desc'));
 
