@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { auth } from '$lib/firebase';
 	import { sendPasswordResetEmail } from 'firebase/auth';
+	import { goto } from '$app/navigation';
+	import { currentUser } from '$lib/firebase';
+	import { browser } from '$app/environment';
+
+    // automatically redirect
+	$: if ($currentUser && browser) {
+		goto('/chat');
+	}
 
 	let email: string;
 	let error: string | undefined;

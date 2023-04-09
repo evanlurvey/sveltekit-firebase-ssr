@@ -6,7 +6,6 @@ import {
 	Query,
 	CollectionReference,
 	type DocumentData,
-	type Firestore,
     getFirestore
 } from 'firebase/firestore';
 import {
@@ -15,7 +14,8 @@ import {
 	indexedDBLocalPersistence,
 	signInWithEmailAndPassword,
 	createUserWithEmailAndPassword,
-    updateProfile
+    updateProfile,
+    sendEmailVerification
 } from 'firebase/auth';
 import {
 	PUBLIC_FIREBASE_PROJECT_ID,
@@ -96,6 +96,7 @@ export const login = async (email: string, password: string) => {
 export const createAccount = async (name: string, email: string, password: string) => {
 	const userCred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCred.user, { displayName: name });
+    await sendEmailVerification(userCred.user);
 	const id_token = await userCred.user.getIdToken(true);
 	await fetch('/api/session-sync', {
 		method: 'post',

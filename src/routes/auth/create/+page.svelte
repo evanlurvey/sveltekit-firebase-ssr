@@ -1,5 +1,13 @@
 <script lang="ts">
 	import { createAccount } from '$lib/firebase';
+	import { goto } from '$app/navigation';
+	import { currentUser } from '$lib/firebase';
+	import { browser } from '$app/environment';
+
+    // automatically redirect
+	$: if ($currentUser && browser) {
+		goto('/chat');
+	}
 
 	let name: string;
 	let email: string;
